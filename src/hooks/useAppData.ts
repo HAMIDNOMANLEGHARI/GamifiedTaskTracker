@@ -25,18 +25,21 @@ export function useAppData() {
         const { data: tasksData, error: tasksError } = await supabase
           .from('tasks')
           .select('*')
+          .eq('user_id', userId)
           .order('created_at', { ascending: false });
         
         if (tasksError) throw tasksError;
 
-        // Fetch Gamification
+        // Fetch Gamification — handle missing row gracefully (PGRST116 = no rows)
         const { data: gamificationData, error: gamificationError } = await supabase
           .from('gamification')
           .select('*')
           .eq('user_id', userId)
           .single();
         
-        if (gamificationError) throw gamificationError;
+        if (gamificationError && gamificationError.code !== 'PGRST116') {
+          console.error('Error loading gamification data:', gamificationError);
+        }
 
         // Fetch User Profile
         const { data: userProfile, error: userError } = await supabase
@@ -51,7 +54,9 @@ export function useAppData() {
 
         if (isMounted) {
           setTasks(tasksData as Task[]);
-          setGamificationData(gamificationData as GamificationData);
+          if (gamificationData) {
+            setGamificationData(gamificationData as GamificationData);
+          }
           if (userProfile && user) {
             setUser({ ...user, ...userProfile });
           }

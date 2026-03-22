@@ -71,8 +71,7 @@ export default function DashboardPage() {
       });
 
       if (data) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        data.forEach((task: any) => {
+        data.forEach((task: { updated_at: string | null }) => {
           if (!task.updated_at) return;
           const dateStr = format(new Date(task.updated_at), 'yyyy-MM-dd');
           if (activityMap.has(dateStr)) {
@@ -117,7 +116,7 @@ export default function DashboardPage() {
               style={{ width: `${(gamification?.xp || 0) % 100}%` }} 
             />
           </div>
-          <p className="text-xs text-zinc-500 mt-2">{gamification?.xp || 0} / {((gamification?.level || 1)) * 100} XP to next level</p>
+          <p className="text-xs text-zinc-500 mt-2">{(gamification?.xp || 0) % 100} / 100 XP to next level</p>
         </div>
 
         <div className="p-6 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm">

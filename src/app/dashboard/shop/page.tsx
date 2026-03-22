@@ -49,9 +49,10 @@ export default function ShopPage() {
 
       if (error) throw error;
       setUser({ ...user, ...updateData });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      alert("Error equipping item: " + err.message);
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      alert("Error equipping item: " + message);
     } finally {
       setIsEquipping(null);
     }
@@ -65,7 +66,7 @@ export default function ShopPage() {
     return false;
   };
 
-  const renderGrid = (items: any[], type: Tab) => {
+  const renderGrid = (items: { id: string; levelReq: number; name?: string; emoji?: string; cssClass?: string; borderClass?: string }[], type: Tab) => {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {items.map((item) => {
@@ -213,7 +214,7 @@ export default function ShopPage() {
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
           >
-            {renderGrid((SHOP_ITEMS as any)[activeTab], activeTab)}
+            {renderGrid(SHOP_ITEMS[activeTab], activeTab)}
           </motion.div>
         </AnimatePresence>
       </div>

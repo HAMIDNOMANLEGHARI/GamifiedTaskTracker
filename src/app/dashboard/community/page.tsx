@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Trophy, Users, UserPlus, Flame, Target, Loader2 } from 'lucide-react';
+import { Trophy, Users, UserPlus, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useUserStore } from '@/store/userStore';
 import { SHOP_ITEMS } from '@/constants/shop';
@@ -44,8 +44,7 @@ export default function CommunityPage() {
         .limit(10);
 
       if (error) throw error;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      setLeaders(data as any);
+      setLeaders(data as unknown as LeaderboardEntry[]);
     } catch (err) {
       console.error(err);
     } finally {

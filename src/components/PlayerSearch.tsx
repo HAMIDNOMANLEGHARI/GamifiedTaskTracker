@@ -98,7 +98,7 @@ export function PlayerSearch() {
           >
             {results.length === 0 && !isSearching ? (
               <div className="p-4 text-sm text-center text-zinc-500">
-                No players found matching "{query}"
+                No players found matching &quot;{query}&quot;
               </div>
             ) : (
               <div className="max-h-64 overflow-y-auto">

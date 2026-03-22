@@ -34,15 +34,15 @@ export async function POST(req: NextRequest) {
     try {
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
       result = await model.generateContent(prompt);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (e1: any) {
-      console.warn("gemini-2.5-flash failed:", e1.message);
+    } catch (e1: unknown) {
+      const msg1 = e1 instanceof Error ? e1.message : 'Unknown error';
+      console.warn("gemini-2.5-flash failed:", msg1);
       try {
         const fallback1 = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
         result = await fallback1.generateContent(prompt);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (e2: any) {
-        console.warn("gemini-1.5-flash-latest failed:", e2.message);
+      } catch (e2: unknown) {
+        const msg2 = e2 instanceof Error ? e2.message : 'Unknown error';
+        console.warn("gemini-1.5-flash-latest failed:", msg2);
         const fallback2 = genAI.getGenerativeModel({ model: "gemini-pro" });
         result = await fallback2.generateContent(prompt);
       }
@@ -56,9 +56,9 @@ export async function POST(req: NextRequest) {
     const tasks = JSON.parse(cleanJsonString);
 
     return NextResponse.json({ tasks }, { status: 200 });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Gemini API Error:", error);
-    return NextResponse.json({ error: error.message || "Failed to generate tasks" }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Failed to generate tasks';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

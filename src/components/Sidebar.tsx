@@ -1,8 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, CheckSquare, Trophy, User as UserIcon, LogOut, Users, ShoppingBag } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, Trophy, User as UserIcon, LogOut, Users, ShoppingBag, Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
 import { useUserStore } from '@/store/userStore';
@@ -21,6 +22,7 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const { user, clearUser } = useUserStore();
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -28,8 +30,8 @@ export function Sidebar() {
     window.location.href = '/';
   };
 
-  return (
-    <div className="flex h-screen w-64 flex-col border-r bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl">
+  const sidebarContent = (
+    <>
       <div className="p-6">
         <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
           LevelUp
@@ -48,6 +50,7 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => setIsOpen(false)}
               className={cn(
                 'flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors',
                 isActive
@@ -88,6 +91,49 @@ export function Sidebar() {
           Logout
         </button>
       </div>
-    </div>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile hamburger button */}
+      <button
+        onClick={() => setIsOpen(true)}
+        className="fixed top-4 left-4 z-50 md:hidden p-2 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-lg"
+        aria-label="Open menu"
+      >
+        <Menu className="h-5 w-5" />
+      </button>
+
+      {/* Mobile overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
+      {/* Mobile sidebar (slide-in drawer) */}
+      <div
+        className={cn(
+          'fixed inset-y-0 left-0 z-50 w-64 flex flex-col border-r bg-white/95 dark:bg-zinc-900/95 backdrop-blur-xl transition-transform duration-300 md:hidden',
+          isOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
+      >
+        <button
+          onClick={() => setIsOpen(false)}
+          className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+          aria-label="Close menu"
+        >
+          <X className="h-5 w-5" />
+        </button>
+        {sidebarContent}
+      </div>
+
+      {/* Desktop sidebar (always visible) */}
+      <div className="hidden md:flex h-screen w-64 flex-col border-r bg-white/50 dark:bg-zinc-900/50 backdrop-blur-xl">
+        {sidebarContent}
+      </div>
+    </>
   );
 }

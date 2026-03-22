@@ -53,7 +53,7 @@ export default function AchievementsPage() {
             <div className="space-y-1 w-full max-w-lg">
               <div className="flex justify-between text-sm font-medium text-violet-200">
                 <span>XP Progress</span>
-                <span>{gamification?.xp || 0} / {(gamification?.level || 1) * 100} XP</span>
+                <span>{(gamification?.xp || 0) % 100} / 100 XP</span>
               </div>
               <div className="h-3 w-full bg-black/40 rounded-full overflow-hidden">
                 <div 

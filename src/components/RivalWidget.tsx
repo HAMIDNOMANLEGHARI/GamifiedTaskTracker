@@ -46,7 +46,7 @@ export function RivalWidget() {
         return;
       }
 
-      const rivalIds = rivalRelations.map((r: any) => r.rival_id);
+      const rivalIds = rivalRelations.map((r: { rival_id: string }) => r.rival_id);
 
       // 2. Fetch User profiles
       const { data: usersData } = await supabase

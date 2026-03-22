@@ -6,6 +6,11 @@ import { SHOP_ITEMS } from '@/constants/shop';
 import { Send, MessageSquare, Loader2, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+interface Like {
+  id: string;
+  name: string;
+}
+
 interface Message {
   id: string;
   user_id: string;
@@ -121,7 +126,7 @@ export function GlobalTavern() {
     }
   };
 
-  const handleToggleLike = async (msgId: string, currentLikes: any[]) => {
+  const handleToggleLike = async (msgId: string, currentLikes: Like[]) => {
     if (!user) return;
     const likesList = currentLikes || [];
     const hasLiked = likesList.some(l => (typeof l === 'string' ? l : l?.id) === user.id);
@@ -173,7 +178,7 @@ export function GlobalTavern() {
             const isMe = msg.user_id === user?.id;
             const ringClass = SHOP_ITEMS.rings.find(r => r.id === (msg.users?.ring || 'basic-white'))?.borderClass || 'border-zinc-200';
             const likesCount = (msg.likes || []).length;
-            const hasLiked = (msg.likes || []).some(l => (typeof l === 'string' ? l : (l as any)?.id) === user?.id);
+            const hasLiked = (msg.likes || []).some((l: Like | string) => (typeof l === 'string' ? l : l?.id) === user?.id);
             
             return (
               <motion.div 
@@ -223,7 +228,7 @@ export function GlobalTavern() {
 
                       {likesCount > 0 && (
                         <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 hidden group-hover/react:block bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 text-[10px] font-bold px-2.5 py-1 rounded-md whitespace-nowrap z-50 shadow-xl pointer-events-none origin-bottom animate-in fade-in zoom-in duration-100">
-                          {msg.likes.map((l: any) => typeof l === 'string' ? 'A Gamer' : l.name).join(', ')}
+                          {msg.likes.map((l: Like | string) => typeof l === 'string' ? 'A Gamer' : l.name).join(', ')}
                           <div className="absolute left-1/2 -translate-x-1/2 top-full border-[4px] border-transparent border-t-zinc-900 dark:border-t-zinc-100" />
                         </div>
                       )}

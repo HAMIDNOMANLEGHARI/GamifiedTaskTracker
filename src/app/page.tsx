@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Sparkles, Target, Trophy, Loader2, Zap, Flame, Brain, Users, Star, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Sparkles, Trophy, Loader2, Zap, Flame, Brain, Users, Star, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useUserStore } from '@/store/userStore';
+import { useRef } from 'react';
 import { motion } from 'framer-motion';
 
 export default function LandingPage() {
@@ -19,28 +20,42 @@ export default function LandingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  // Track if we've already set a user to avoid overwriting profile-merged data
+  const hasSetUser = useRef(false);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        setUser(session.user as any);
+        // Only set raw auth user if we haven't already loaded this user
+        const currentUser = useUserStore.getState().user;
+        if (!currentUser || currentUser.id !== session.user.id) {
+          setUser(session.user as never);
+        }
+        hasSetUser.current = true;
         router.push('/dashboard');
       }
-      // setLoading(false); // Removed as per instruction to remove setLoading from useUserStore
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
-        setUser(session.user as any);
+        // Only set raw auth user if we haven't already loaded this user
+        // This prevents overwriting profile-merged data from useAppData
+        const currentUser = useUserStore.getState().user;
+        if (!currentUser || currentUser.id !== session.user.id) {
+          setUser(session.user as never);
+        }
+        hasSetUser.current = true;
         router.push('/dashboard');
       } else {
         setUser(null);
+        hasSetUser.current = false;
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [router, setUser]); // Removed setLoading from dependency array
+  }, [router, setUser]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,8 +84,9 @@ export default function LandingPage() {
         // If require email confirmation is ON in supabase, this might not log them in instantly.
         // Assuming default dev project behaviour here.
       }
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Authentication failed');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Authentication failed';
+      setErrorMsg(message);
     } finally {
       setIsLoading(false);
     }
@@ -121,7 +137,7 @@ export default function LandingPage() {
               <div className="p-3 bg-red-500/10 rounded-xl"><Flame className="h-6 w-6 text-red-400" /></div>
               <div>
                 <h3 className="font-bold text-white">Build Streaks</h3>
-                <p className="text-xs text-zinc-400">Don't break the chain</p>
+                <p className="text-xs text-zinc-400">Don&apos;t break the chain</p>
               </div>
             </motion.div>
             <motion.div whileHover={{ scale: 1.05 }} className="p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md flex items-center gap-4 shadow-lg">
@@ -157,7 +173,7 @@ export default function LandingPage() {
             <div className="flex gap-1 mb-1">
               {[1,2,3,4,5].map(i => <Star key={i} className="h-3 w-3 fill-yellow-400 text-yellow-400" />)}
             </div>
-            <p className="text-xs text-zinc-300 italic font-medium">"Literally addicted to getting my life together rn tbh."</p>
+            <p className="text-xs text-zinc-300 italic font-medium">&quot;Literally addicted to getting my life together rn tbh.&quot;</p>
           </motion.div>
 
           <div className="relative bg-black/40 backdrop-blur-2xl border border-white/10 p-8 rounded-[2rem] shadow-[0_0_50px_rgba(0,0,0,0.5)]">

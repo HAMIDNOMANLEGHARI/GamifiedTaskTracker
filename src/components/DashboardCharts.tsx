@@ -29,9 +29,9 @@ export function DashboardCharts() {
 
     tasks.forEach(task => {
       if (task.status === 'completed') {
-        // Technically we should check completed_at, but we only have created_at and status in the simple schema
-        // For demo purposes, we will just use created_at as an approximation or assume recently completed.
-        const dStr = format(new Date(task.created_at), 'yyyy-MM-dd');
+        // Use updated_at (when the task was completed) instead of created_at
+        const completedDate = task.updated_at || task.created_at;
+        const dStr = format(new Date(completedDate), 'yyyy-MM-dd');
         const day = days.find(d => d.dateStr === dStr);
         if (day) {
           day.Tasks_Completed += 1;

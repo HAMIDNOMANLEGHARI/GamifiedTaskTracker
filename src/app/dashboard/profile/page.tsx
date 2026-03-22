@@ -5,8 +5,9 @@ import { useUserStore } from '@/store/userStore';
 import { useGamificationStore } from '@/store/gamificationStore';
 import { supabase } from '@/lib/supabase';
 import { useTheme } from 'next-themes';
-import { Loader2, Palette, Save, Shield, Zap, User, Upload } from 'lucide-react';
+import { Loader2, Palette, Save, Shield, Zap, User, Upload, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { SHOP_ITEMS } from '@/constants/shop';
 
 export default function ProfilePage() {
   const { user, setUser } = useUserStore();
@@ -16,7 +17,7 @@ export default function ProfilePage() {
   const [name, setName] = useState(user?.name || '');
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || '');
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const genZEmojis = ['💀', '👽', '🐉', '👑', '🎭', '🚀', '🦊', '⚡'];
+  const userLevel = gamification?.level || 1;
 
   const [isSaving, setIsSaving] = useState(false);
   const [success, setSuccess] = useState('');
@@ -44,9 +45,10 @@ export default function ProfilePage() {
       
       setUser({ ...user, name, avatar_url: avatarUrl });
       setSuccess('Profile updated successfully!');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      alert("Error saving profile: " + err.message);
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      alert("Error saving profile: " + message);
     } finally {
       setIsSaving(false);
     }
@@ -72,9 +74,10 @@ export default function ProfilePage() {
         .getPublicUrl(filePath);
 
       setAvatarUrl(publicUrlData.publicUrl);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
-      alert('Error uploading avatar: ' + error.message);
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      alert('Error uploading avatar: ' + message);
     } finally {
       setIsUploadingAvatar(false);
     }
@@ -170,18 +173,32 @@ export default function ProfilePage() {
         <div className="pt-6 border-t border-zinc-200 dark:border-zinc-800">
           <h2 className="text-xl font-bold tracking-tight mb-4 text-zinc-800 dark:text-zinc-200">Gamer Avatar</h2>
           <div className="flex flex-wrap gap-3 mb-4">
-            {genZEmojis.map(e => (
-              <button
-                key={e}
-                type="button"
-                onClick={() => setAvatarUrl(e)}
-                className={`w-14 h-14 text-3xl rounded-2xl border-2 flex items-center justify-center transition-all hover:scale-110 ${
-                  avatarUrl === e ? 'bg-indigo-100 border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.3)]' : 'bg-white/50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-700'
-                }`}
-              >
-                {e}
-              </button>
-            ))}
+            {SHOP_ITEMS.emojis.map(item => {
+              const isUnlocked = userLevel >= item.levelReq;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  disabled={!isUnlocked}
+                  onClick={() => isUnlocked && setAvatarUrl(item.emoji)}
+                  className={`relative w-14 h-14 text-3xl rounded-2xl border-2 flex items-center justify-center transition-all ${
+                    !isUnlocked
+                      ? 'opacity-40 grayscale cursor-not-allowed border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800/50'
+                      : avatarUrl === item.emoji
+                        ? 'bg-indigo-100 border-indigo-500 shadow-[0_0_15px_rgba(99,102,241,0.3)] hover:scale-110'
+                        : 'bg-white/50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-700 hover:scale-110'
+                  }`}
+                  title={isUnlocked ? item.emoji : `Unlock at Level ${item.levelReq} (The Vault)`}
+                >
+                  {item.emoji}
+                  {!isUnlocked && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-white/60 dark:bg-black/50 rounded-2xl">
+                      <Lock className="w-4 h-4 text-zinc-500" />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
           </div>
           <div className="flex items-center gap-4">
             <label className="flex items-center justify-center px-4 py-2.5 bg-white dark:bg-zinc-800 border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl cursor-pointer hover:border-indigo-500 hover:text-indigo-600 transition-colors text-sm font-bold text-zinc-600 dark:text-zinc-400 shadow-sm">
@@ -234,10 +251,10 @@ export default function ProfilePage() {
             </motion.span>
           )}
           <motion.button 
-            whileHover={!(isSaving || name === user?.name) ? { scale: 1.05 } : {}}
-            whileTap={!(isSaving || name === user?.name) ? { scale: 0.95 } : {}}
+            whileHover={!isSaving ? { scale: 1.05 } : {}}
+            whileTap={!isSaving ? { scale: 0.95 } : {}}
             type="submit"
-            disabled={isSaving || name === user?.name}
+            disabled={isSaving}
             className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-3.5 rounded-xl font-bold shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
           >
             {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}

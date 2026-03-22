@@ -56,9 +56,10 @@ export function TaskBoard() {
       addTask(data as Task);
       setNewTaskTitle('');
       setNewTaskDeadline('');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error adding task:', err);
-      alert('Error: ' + (err.message || "Failed to add task to database"));
+      const message = err instanceof Error ? err.message : 'Failed to add task to database';
+      alert('Error: ' + message);
     } finally {
       setIsAdding(false);
     }
@@ -77,9 +78,13 @@ export function TaskBoard() {
         origin: { y: 0.6 }
       });
       addXP(10);
-      supabase.rpc('increment_xp', { amount: 10, user_uuid: user?.id }).then(({ error }) => {
-        if (error) console.error("XP rpc error", error);
-      });
+      
+      // Await the server-side XP increment — roll back local XP on failure
+      const { error: xpError } = await supabase.rpc('increment_xp', { amount: 10, user_uuid: user?.id });
+      if (xpError) {
+        console.error("XP rpc error", xpError);
+        addXP(-10); // Roll back local XP
+      }
     }
 
     try {
@@ -92,9 +97,10 @@ export function TaskBoard() {
         updateTask(task.id, { status: task.status, progress: task.progress });
         throw error;
       }
-    } catch (err: any) {
-      console.error('Error updating task:', err);
-      alert('Error updating task: ' + (err.message || "Network Error"));
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Network Error';
+      console.error('Error updating task:', message);
+      alert('Error updating task: ' + message);
     }
   };
 
