@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { useUserStore } from '@/store/userStore';
 import { SHOP_ITEMS } from '@/constants/shop';
 import { GlobalTavern } from '@/components/GlobalTavern';
+import { useRouter } from 'next/navigation';
 
 interface LeaderboardEntry {
   user_id: string;
@@ -18,10 +19,12 @@ interface LeaderboardEntry {
     avatar_url: string | null;
     title: string | null;
     ring: string | null;
+    username: string;
   };
 }
 
 export default function CommunityPage() {
+  const router = useRouter();
   const { user } = useUserStore();
   const [leaders, setLeaders] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,7 +41,7 @@ export default function CommunityPage() {
         .from('gamification')
         .select(`
           user_id, xp, level,
-          users!inner ( name, email, avatar_url, title, ring )
+          users!inner ( name, email, avatar_url, title, ring, username )
         `)
         .order('xp', { ascending: false })
         .limit(10);
@@ -130,7 +133,8 @@ export default function CommunityPage() {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.05 }}
                     key={leader.user_id}
-                    className={`p-4 flex items-center gap-4 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors ${
+                    onClick={() => router.push(`/dashboard/u/${leader.users.username || 'unknown'}`)}
+                    className={`p-4 flex items-center gap-4 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors ${
                       user?.id === leader.user_id ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''
                     }`}
                   >

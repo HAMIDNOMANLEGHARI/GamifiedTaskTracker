@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useParams, useRouter } from 'next/navigation';
 import { useUserStore } from '@/store/userStore';
+import { Task } from '@/store/taskStore';
 import { SHOP_ITEMS } from '@/constants/shop';
-import { Users, Loader2, Target, Trophy, Flame } from 'lucide-react';
+import { Users, Loader2, Target, Trophy, Flame, CheckCircle2, Circle } from 'lucide-react';
 
 interface PublicProfile {
   id: string;
@@ -30,6 +31,7 @@ export default function PublicProfilePage() {
 
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [stats, setStats] = useState<GamificationStats | null>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
   
   const [followers, setFollowers] = useState(0);
   const [following, setFollowing] = useState(0);
@@ -74,6 +76,15 @@ export default function PublicProfilePage() {
       ]);
       setFollowers(fwerCount || 0);
       setFollowing(fwingCount || 0);
+
+      // 4. Fetch their tasks
+      const { data: userTasks } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('user_id', userData.id)
+        .order('created_at', { ascending: false });
+        
+      if (userTasks) setTasks(userTasks as Task[]);
 
       // 4. Check if CURRENT user is following/rival
       if (currentUser && currentUser.id !== userData.id) {
@@ -262,6 +273,58 @@ export default function PublicProfilePage() {
             <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-red-400 to-rose-500" />
           </div>
         </div>
+      </div>
+
+      {/* Task History Section */}
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm p-6 lg:p-8 mt-6">
+        <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+          <CheckCircle2 className="w-6 h-6 text-indigo-500" />
+          Recent Activity
+        </h2>
+
+        {tasks.length === 0 ? (
+          <div className="text-center p-8 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl">
+             <p className="text-zinc-500 font-medium">This player hasn&apos;t logged any tasks yet.</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {tasks.map(task => (
+              <div 
+                key={task.id}
+                className={`p-5 rounded-xl border flex items-start gap-4 transition-colors ${
+                  task.status === 'completed' 
+                    ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/50' 
+                    : 'bg-zinc-50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-800'
+                }`}
+              >
+                <div className="mt-0.5 shrink-0">
+                  {task.status === 'completed' ? (
+                     <CheckCircle2 className="w-6 h-6 text-emerald-500 drop-shadow-sm" />
+                  ) : (
+                     <Circle className="w-6 h-6 text-zinc-400" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`font-bold text-base truncate ${task.status === 'completed' ? 'text-zinc-900 dark:text-zinc-100 line-through opacity-75' : 'text-zinc-900 dark:text-zinc-100'}`}>
+                    {task.title}
+                  </p>
+                  <div className="flex items-center gap-3 mt-2">
+                    <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full ${
+                      task.status === 'completed' 
+                        ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400' 
+                        : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300'
+                    }`}>
+                      {task.category}
+                    </span>
+                    <span className="text-xs text-zinc-500 font-semibold">
+                      {new Date(task.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
