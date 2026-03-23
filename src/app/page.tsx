@@ -6,6 +6,8 @@ import { ArrowRight, Sparkles, Trophy, Loader2, Brain, Users, Star, CheckCircle2
 import { supabase } from '@/lib/supabase';
 import { useUserStore } from '@/store/userStore';
 import { motion } from 'framer-motion';
+import { LandingHeader } from '@/components/landing/LandingHeader';
+import { LandingFooter } from '@/components/landing/LandingFooter';
 
 export default function LandingPage() {
   const router = useRouter();
@@ -92,6 +94,8 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#050505] text-white selection:bg-indigo-500 overflow-x-hidden relative font-sans">
       
+      <LandingHeader />
+
       {/* Background Glowing Orbs */}
       <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] bg-pink-600/10 rounded-full blur-[150px] pointer-events-none" />
@@ -411,6 +415,8 @@ export default function LandingPage() {
             </button>
          </div>
       </section>
+
+      <LandingFooter />
 
     </div>
   );
