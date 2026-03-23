@@ -100,7 +100,7 @@ export function SmartQuestGenerator() {
           <Sparkles className="h-6 w-6" />
         </div>
         
-        <div className="flex-1 space-y-4">
+        <div className="flex-1 min-w-0 space-y-4">
           <div>
             <h2 className="text-xl font-bold tracking-tight text-blue-900 dark:text-blue-100">AI Quest Generator</h2>
             <p className="text-blue-700/80 dark:text-blue-300">Enter a big goal and let our AI break it down into an actionable quest.</p>
@@ -112,7 +112,7 @@ export function SmartQuestGenerator() {
               value={goal}
               onChange={(e) => setGoal(e.target.value)}
               placeholder="e.g. Learn Next.js or Run a Marathon"
-              className="flex-1 px-4 py-2.5 rounded-lg border-0 ring-1 ring-blue-200 dark:ring-blue-800 bg-white/80 dark:bg-black/50 outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium"
+              className="flex-1 min-w-0 w-full px-4 py-2.5 rounded-lg border-0 ring-1 ring-blue-200 dark:ring-blue-800 bg-white/80 dark:bg-black/50 outline-none focus:ring-2 focus:ring-blue-500 transition-all font-medium"
             />
             <button 
               disabled={isGenerating || !goal.trim()}
