@@ -151,7 +151,7 @@ export function TaskBoard() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         onSubmit={handleAddTask} 
-        className="flex flex-wrap gap-4 items-end bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm"
+        className="flex flex-col md:flex-row gap-4 md:items-end bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm"
       >
         <div className="flex-1 min-w-[200px] space-y-2">
           <label className="text-sm font-medium text-zinc-500">I need to...</label>
@@ -163,7 +163,7 @@ export function TaskBoard() {
             placeholder="e.g., Read chapter 4 of Biology..."
           />
         </div>
-        <div className="w-40 space-y-2">
+        <div className="w-full md:w-40 space-y-2">
           <label className="text-sm font-medium text-zinc-500">Deadline</label>
           <input 
             aria-label="Task Deadline"
@@ -173,7 +173,7 @@ export function TaskBoard() {
             className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 text-sm"
           />
         </div>
-        <div className="w-32 space-y-2">
+        <div className="w-full md:w-32 space-y-2">
           <label className="text-sm font-medium text-zinc-500">Category</label>
           <select 
             aria-label="Task Category"
@@ -187,7 +187,7 @@ export function TaskBoard() {
         <button 
           disabled={isAdding || !newTaskTitle.trim()}
           type="submit" 
-          className="h-[38px] px-6 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
+          className="w-full md:w-auto h-[38px] px-6 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
         >
           {isAdding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
           Add

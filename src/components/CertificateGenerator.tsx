@@ -38,7 +38,7 @@ export function CertificateGenerator() {
       </div>
 
       {/* The Printable Certificate */}
-      <div className="relative p-12 overflow-hidden bg-white border-[8px] border-double border-zinc-200 shadow-sm print:shadow-none print:border-zinc-900 mx-auto max-w-3xl aspect-[1.414/1] flex flex-col items-center justify-center text-center print:aspect-auto print:bg-white print:text-black">
+      <div className="relative p-6 md:p-12 overflow-hidden bg-white border-[8px] border-double border-zinc-200 shadow-sm print:shadow-none print:border-zinc-900 mx-auto max-w-3xl aspect-[1.414/1] flex flex-col items-center justify-center text-center print:aspect-auto print:bg-white print:text-black">
         
         {/* Decorative inner border */}
         <div className="absolute inset-4 border border-zinc-200 print:border-zinc-900" />
@@ -51,7 +51,7 @@ export function CertificateGenerator() {
 
           <div className="space-y-4">
             <p className="text-zinc-500 print:text-zinc-700 italic">This proudly certifies that</p>
-            <p className="text-3xl font-bold text-zinc-900 print:text-black border-b border-zinc-300 print:border-zinc-900 pb-2 inline-block px-12">
+            <p className="text-3xl font-bold text-zinc-900 print:text-black border-b border-zinc-300 print:border-zinc-900 pb-2 inline-block px-6 md:px-12">
               {user?.name || user?.email || 'Dedicated Achiever'}
             </p>
           </div>

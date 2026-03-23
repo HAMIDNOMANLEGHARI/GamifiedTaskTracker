@@ -63,7 +63,7 @@ export default function AchievementsPage() {
               </div>
             </div>
           </div>
-          <div className="shrink-0 text-center bg-black/20 p-4 rounded-xl backdrop-blur-sm border border-white/10">
+          <div className="w-full md:w-auto shrink-0 text-center bg-black/20 p-4 rounded-xl backdrop-blur-sm border border-white/10">
             <Trophy className="h-10 w-10 text-yellow-500 mx-auto mb-2" />
             <p className="text-sm font-medium text-violet-200">Badges Earned</p>
             <p className="text-2xl font-bold">{BADGES.filter(isUnlocked).length}</p>
