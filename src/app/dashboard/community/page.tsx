@@ -102,7 +102,11 @@ export default function CommunityPage() {
                       SHOP_ITEMS.rings.find(r => r.id === (leader.users.ring || 'basic-white'))?.borderClass || 'border-zinc-200 dark:border-zinc-700'
                     }`}>
                       {leader.users.avatar_url ? (
-                        <img src={leader.users.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                        leader.users.avatar_url.startsWith('http') ? (
+                          <img src={leader.users.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          <span>{leader.users.avatar_url}</span>
+                        )
                       ) : (
                         <span className="text-zinc-500 dark:text-zinc-400">{(leader.users.name || leader.users.email).substring(0, 1).toUpperCase()}</span>
                       )}
