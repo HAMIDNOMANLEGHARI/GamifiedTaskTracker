@@ -3,17 +3,30 @@
 import { useState } from 'react';
 import { useGamificationStore } from '@/store/gamificationStore';
 import { useTaskStore } from '@/store/taskStore';
-import { Trophy, Star, Shield, Flame, Target } from 'lucide-react';
+import { Trophy, Star, Shield, Flame, Target, Swords, Crown, Zap, Medal, Rocket, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CertificateGenerator } from '@/components/CertificateGenerator';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Static badge definitions matching the database
 const BADGES = [
-  { id: 'first-task', name: 'First Task', icon: Star, criteria: 'Complete your very first task!', requirement: 1, type: 'tasks', rarity: 'common' },
+  // Tasks
+  { id: 'first-task', name: 'First Task', icon: Star, criteria: 'Complete your first task', requirement: 1, type: 'tasks', rarity: 'common' },
+  { id: 'novice-quester', name: 'Novice Quester', icon: Swords, criteria: 'Complete 10 tasks', requirement: 10, type: 'tasks', rarity: 'common' },
+  { id: 'half-century', name: 'Half Century', icon: Medal, criteria: 'Complete 50 tasks', requirement: 50, type: 'tasks', rarity: 'rare' },
+  { id: 'task-master', name: 'Task Master', icon: Target, criteria: 'Complete 100 tasks', requirement: 100, type: 'tasks', rarity: 'epic' },
+  { id: 'task-grandmaster', name: 'Grandmaster', icon: Crown, criteria: 'Complete 500 tasks', requirement: 500, type: 'tasks', rarity: 'legendary' },
+
+  // Streaks
+  { id: 'warming-up', name: 'Warming Up', icon: Flame, criteria: 'Maintain a 3-day streak', requirement: 3, type: 'streak', rarity: 'common' },
   { id: 'week-warrior', name: 'Week Warrior', icon: Flame, criteria: 'Maintain a 7-day streak', requirement: 7, type: 'streak', rarity: 'rare' },
-  { id: 'level-5', name: 'Level 5 Reached', icon: Shield, criteria: 'Reach Level 5', requirement: 5, type: 'level', rarity: 'epic' },
-  { id: 'task-master', name: 'Task Master', icon: Target, criteria: 'Complete 100 tasks', requirement: 100, type: 'tasks', rarity: 'legendary' },
+  { id: 'monthly-maestro', name: 'Monthly Maestro', icon: Clock, criteria: 'Maintain a 30-day streak', requirement: 30, type: 'streak', rarity: 'legendary' },
+
+  // Levels
+  { id: 'ascending', name: 'Ascending', icon: Rocket, criteria: 'Reach Level 3', requirement: 3, type: 'level', rarity: 'common' },
+  { id: 'level-5', name: 'Level 5 Reached', icon: Shield, criteria: 'Reach Level 5', requirement: 5, type: 'level', rarity: 'rare' },
+  { id: 'double-digits', name: 'Double Digits', icon: Zap, criteria: 'Reach Level 10', requirement: 10, type: 'level', rarity: 'epic' },
+  { id: 'the-apex', name: 'The Apex Player', icon: Trophy, criteria: 'Reach Level 50', requirement: 50, type: 'level', rarity: 'legendary' },
 ];
 
 const RARITY_STYLES = {
