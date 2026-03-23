@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useUserStore } from '@/store/userStore';
 import { useGamificationStore } from '@/store/gamificationStore';
 import { format } from 'date-fns';
@@ -12,7 +12,27 @@ export function CertificateGenerator() {
   const { user } = useUserStore();
   const gamification = useGamificationStore((state) => state.data);
   const printRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [scale, setScale] = useState(1);
+
+  // Dynamically calculate scale based on available container width
+  useEffect(() => {
+    const handleResize = () => {
+      if (containerRef.current) {
+        const availableWidth = containerRef.current.clientWidth - 48; // 24px padding on each side
+        if (availableWidth < 1000) {
+          setScale(availableWidth / 1000);
+        } else {
+          setScale(1);
+        }
+      }
+    };
+    
+    handleResize(); // Initial measurement
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   if (!gamification || gamification.level < 5) {
     return (
@@ -32,7 +52,14 @@ export function CertificateGenerator() {
       const canvas = await html2canvas(element, {
         scale: 3, // High resolution
         useCORS: true,
-        backgroundColor: '#fcfcf9'
+        backgroundColor: '#fcfcf9',
+        onclone: (document) => {
+          // Remove the responsive CSS scale exclusively for the PDF capture
+          const el = document.getElementById('printable-certificate');
+          if (el) {
+            el.style.transform = 'none';
+          }
+        }
       });
       const data = canvas.toDataURL('image/png');
       
@@ -70,13 +97,22 @@ export function CertificateGenerator() {
       </div>
 
       {/* The Printable Certificate Container */}
-      {/* Used overflow-x-auto to prevent layout blowout on mobile, yet keep the certificate large enough for HD PDF export */}
-      <div className="w-full overflow-x-auto pb-8 flex justify-center custom-scrollbar">
-        {/* Fixed Wrapper for Canvas target guaranteeing minimum quality */}
+      {/* Dynamically scales visually but retains 1000px DOM structure for perfect PDF export */}
+      <div 
+        ref={containerRef}
+        className="w-full overflow-hidden flex justify-center bg-zinc-100 dark:bg-zinc-800/20 rounded-2xl py-8 transition-all duration-300"
+        style={{ height: `${700 * scale + 64}px` }}
+      >
+        {/* Fixed Wrapper for Canvas target guaranteeing HD quality */}
         <div 
+          id="printable-certificate"
           ref={printRef}
-          className="relative bg-[#fcfcf9] min-w-[900px] w-[1000px] h-[700px] flex flex-col items-center justify-center text-center text-black p-8 shadow-2xl shrink-0"
-          style={{ backgroundImage: 'radial-gradient(#e5e7eb 1px, transparent 1px)', backgroundSize: '40px 40px' }}
+          className="relative bg-[#fcfcf9] w-[1000px] h-[700px] flex flex-col items-center justify-center text-center text-black p-8 shadow-2xl shrink-0 origin-top transition-transform duration-300"
+          style={{ 
+            transform: `scale(${scale})`,
+            backgroundImage: 'radial-gradient(#e5e7eb 1px, transparent 1px)', 
+            backgroundSize: '40px 40px' 
+          }}
         >
           {/* Outer Border */}
           <div className="absolute inset-0 m-6 border-[12px] border-[#1e3a8a] rounded-sm pointer-events-none" />
