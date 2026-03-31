@@ -59,16 +59,23 @@ export function useAppData() {
           processDailyLogin(today, yesterdayStr);
 
           if (lastActiveDate !== today) {
+            let newStreakCount = finalGamificationData.streak_count || 0;
+
             // Process Streak Missing Rules
             if (lastActiveDate && lastActiveDate !== yesterdayStr && lastActiveDate !== today) {
               const freezeUsed = consumeStreakFreeze();
               if (freezeUsed) {
                 setTimeout(() => toast('Streak Freeze Activated! Your streak was saved.', { icon: '❄️' }), 2000);
+                newStreakCount += 1; // Protected! Continue streak
               } else {
                 // If they have no freezes, their actual backend streak would ideally reset here.
-                // Assuming backend or task system handles streak clears, we can note it here.
                 setTimeout(() => toast.error('You missed a day and lost your streak!'), 2000);
+                newStreakCount = 1; // Reset streak
               }
+            } else if (lastActiveDate === yesterdayStr) {
+               newStreakCount += 1; // Consecutive login!
+            } else if (!lastActiveDate) {
+               newStreakCount = 1; // First day!
             }
 
             const newXP = finalGamificationData.xp + 5;
@@ -77,7 +84,7 @@ export function useAppData() {
 
             const { error: updateError } = await supabase
               .from('gamification')
-              .update({ xp: newXP, level: newLevel, last_active_date: newDate })
+              .update({ xp: newXP, level: newLevel, last_active_date: newDate, streak_count: newStreakCount })
               .eq('user_id', userId);
 
             if (!updateError) {
@@ -85,7 +92,8 @@ export function useAppData() {
                 ...finalGamificationData,
                 xp: newXP,
                 level: newLevel,
-                last_active_date: newDate
+                last_active_date: newDate,
+                streak_count: newStreakCount
               };
               
               // Add a slight delay to ensure toast shows after DOM paints
