@@ -267,7 +267,7 @@ export default function ProfilePage() {
           className="p-8 rounded-[2rem] bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl border border-zinc-200/50 dark:border-zinc-800/50 shadow-xl space-y-5"
         >
           <h2 className="text-xl font-bold tracking-tight text-zinc-800 dark:text-zinc-200 flex items-center gap-2">
-            <Users className="h-5 w-5 text-indigo-500" /> Your Guilds
+            <Users className="h-5 w-5 text-indigo-500" /> Your Groups
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {myGuilds.map((g) => (
@@ -276,7 +276,13 @@ export default function ProfilePage() {
                 onClick={() => router.push(`/dashboard/community/${g.community_id}`)}
                 className="flex items-center gap-3 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:border-indigo-300 dark:hover:border-indigo-700 cursor-pointer transition-all hover:shadow-md"
               >
-                <div className="text-2xl">{g.sub_communities.avatar_emoji}</div>
+                <div className="text-2xl shrink-0">
+                  {g.sub_communities.avatar_emoji.startsWith('http') ? (
+                    <img src={g.sub_communities.avatar_emoji} alt="" className="w-8 h-8 rounded-lg object-cover" />
+                  ) : (
+                    g.sub_communities.avatar_emoji
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-sm truncate">{g.sub_communities.name}</p>
                   <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider flex items-center gap-1">

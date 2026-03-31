@@ -360,7 +360,7 @@ export default function PublicProfilePage() {
         <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm p-6 lg:p-8">
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
             <Users className="w-6 h-6 text-indigo-500" />
-            Guilds
+            Groups
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {guilds.map((g) => (
@@ -369,7 +369,13 @@ export default function PublicProfilePage() {
                 onClick={() => router.push(`/dashboard/community/${g.community_id}`)}
                 className="flex items-center gap-3 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 hover:border-indigo-300 dark:hover:border-indigo-700 cursor-pointer transition-all"
               >
-                <div className="text-2xl">{g.sub_communities.avatar_emoji}</div>
+                <div className="text-2xl shrink-0">
+                  {g.sub_communities.avatar_emoji.startsWith('http') ? (
+                    <img src={g.sub_communities.avatar_emoji} alt="" className="w-8 h-8 rounded-lg object-cover" />
+                  ) : (
+                    g.sub_communities.avatar_emoji
+                  )}
+                </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-sm truncate">{g.sub_communities.name}</p>
                   <p className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider flex items-center gap-1">

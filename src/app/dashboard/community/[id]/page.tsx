@@ -278,7 +278,7 @@ export default function CommunityDetailPage() {
     return (
       <div className="flex flex-col items-center justify-center h-[50vh] text-center space-y-4">
         <Users className="w-16 h-16 text-zinc-400 opacity-50" />
-        <h2 className="text-2xl font-bold">Guild Not Found</h2>
+        <h2 className="text-2xl font-bold">Group Not Found</h2>
         <button onClick={() => router.back()} className="px-4 py-2 bg-zinc-900 text-white rounded-lg font-bold">Go Back</button>
       </div>
     );
@@ -298,7 +298,13 @@ export default function CommunityDetailPage() {
       <div className="relative overflow-hidden rounded-[2rem] p-8 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 text-white shadow-2xl">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-20 mix-blend-overlay" />
         <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
-          <div className="text-7xl">{community.avatar_emoji}</div>
+          <div className="text-7xl shrink-0">
+              {community.avatar_emoji.startsWith('http') ? (
+                <img src={community.avatar_emoji} alt="" className="w-20 h-20 rounded-2xl object-cover shadow-lg" />
+              ) : (
+                community.avatar_emoji
+              )}
+            </div>
           <div className="flex-1 text-center md:text-left">
             <h1 className="text-4xl font-black tracking-tight">{community.name}</h1>
             {community.description && <p className="text-white/80 mt-2 text-lg">{community.description}</p>}
@@ -328,7 +334,7 @@ export default function CommunityDetailPage() {
             <div className="p-2 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-500 rounded-xl">
               <Trophy className="h-5 w-5" />
             </div>
-            <h2 className="font-bold text-lg">Guild Leaderboard</h2>
+            <h2 className="font-bold text-lg">Group Leaderboard</h2>
           </div>
           <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
             {sortedMembers.map((member, index) => {
@@ -443,7 +449,7 @@ export default function CommunityDetailPage() {
           <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden">
             <div className="p-5 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
               <h2 className="font-bold text-lg flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-indigo-500" /> Guild Tasks
+                <CheckCircle2 className="w-5 h-5 text-indigo-500" /> Group Tasks
               </h2>
               <span className="text-sm text-zinc-500 font-medium">{tasks.length} total</span>
             </div>

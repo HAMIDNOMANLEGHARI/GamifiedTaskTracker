@@ -132,20 +132,20 @@ export default function CommunityPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Community</h1>
-          <p className="text-zinc-500">Compete on the leaderboard, join guilds, and tackle Co-op Quests with friends.</p>
+          <p className="text-zinc-500">Compete on the leaderboard, join groups, and tackle Co-op Quests with friends.</p>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
           className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all hover:scale-105"
         >
-          <Plus className="w-4 h-4" /> Create Guild
+          <Plus className="w-4 h-4" /> Create Group
         </button>
       </div>
 
       {/* Your Guilds */}
       <div className="space-y-4">
         <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
-          <Users className="w-5 h-5 text-indigo-500" /> Your Guilds
+          <Users className="w-5 h-5 text-indigo-500" /> Your Groups
         </h2>
         {communitiesLoading ? (
           <div className="flex justify-center p-8">
@@ -154,7 +154,7 @@ export default function CommunityPage() {
         ) : myCommunities.length === 0 ? (
           <div className="p-8 text-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl">
             <Users className="w-12 h-12 text-zinc-400 mx-auto mb-3 opacity-30" />
-            <p className="text-zinc-500 font-medium">You haven&apos;t joined any guilds yet.</p>
+            <p className="text-zinc-500 font-medium">You haven&apos;t joined any groups yet.</p>
             <p className="text-zinc-400 text-sm mt-1">Create one or get invited by a friend!</p>
           </div>
         ) : (
@@ -167,7 +167,13 @@ export default function CommunityPage() {
                 className="cursor-pointer p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-lg transition-all"
               >
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="text-3xl">{mc.sub_communities.avatar_emoji}</div>
+                  <div className="text-3xl shrink-0">
+                    {mc.sub_communities.avatar_emoji.startsWith('http') ? (
+                      <img src={mc.sub_communities.avatar_emoji} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                    ) : (
+                      mc.sub_communities.avatar_emoji
+                    )}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-bold truncate">{mc.sub_communities.name}</h3>
                     <p className="text-xs text-zinc-500 flex items-center gap-1">
