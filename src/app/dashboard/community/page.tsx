@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Trophy, Loader2, Plus, Users, Crown } from 'lucide-react';
+import { Trophy, Loader2, Plus, Users, Crown, Globe, UserPlus } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useUserStore } from '@/store/userStore';
 import { SHOP_ITEMS } from '@/constants/shop';
 import { GlobalTavern } from '@/components/GlobalTavern';
 import { CreateCommunityModal } from '@/components/CreateCommunityModal';
 import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
 
 interface LeaderboardEntry {
   user_id: string;
@@ -46,10 +47,16 @@ export default function CommunityPage() {
   const [loading, setLoading] = useState(true);
   const [communitiesLoading, setCommunitiesLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [discoverGroups, setDiscoverGroups] = useState<{ id: string; name: string; avatar_emoji: string; description: string | null; member_count: number }[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<Set<string>>(new Set());
+  const [requestingJoin, setRequestingJoin] = useState<string | null>(null);
 
   useEffect(() => {
     fetchLeaderboard();
-    if (user?.id) fetchMyCommunities();
+    if (user?.id) {
+      fetchMyCommunities();
+      fetchDiscoverGroups();
+    }
   }, [user?.id]);
 
   const fetchLeaderboard = async () => {
@@ -127,6 +134,71 @@ export default function CommunityPage() {
     }
   };
 
+  const fetchDiscoverGroups = async () => {
+    try {
+      // Fetch all communities
+      const { data: allCommunities } = await supabase
+        .from('sub_communities')
+        .select('id, name, avatar_emoji, description')
+        .order('created_at', { ascending: false });
+      if (!allCommunities || allCommunities.length === 0) return;
+
+      // Fetch user's memberships
+      const { data: myMemberships } = await supabase
+        .from('community_members')
+        .select('community_id')
+        .eq('user_id', user!.id);
+      const myCommIds = new Set((myMemberships || []).map(m => m.community_id));
+
+      // Filter out ones user is already in
+      const notJoined = allCommunities.filter(c => !myCommIds.has(c.id));
+      if (notJoined.length === 0) { setDiscoverGroups([]); return; }
+
+      // Fetch member counts
+      const withCounts = await Promise.all(notJoined.map(async (c) => {
+        const { count } = await supabase
+          .from('community_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('community_id', c.id);
+        return { ...c, member_count: count || 0 };
+      }));
+
+      // Fetch pending requests
+      const { data: pendingReqs } = await supabase
+        .from('community_join_requests')
+        .select('community_id')
+        .eq('user_id', user!.id)
+        .eq('status', 'pending');
+      setPendingRequests(new Set((pendingReqs || []).map(r => r.community_id)));
+
+      setDiscoverGroups(withCounts);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleRequestJoin = async (communityId: string) => {
+    if (!user) return;
+    setRequestingJoin(communityId);
+    try {
+      const { error } = await supabase
+        .from('community_join_requests')
+        .insert({
+          community_id: communityId,
+          user_id: user.id,
+          status: 'pending',
+        });
+      if (error) throw error;
+      setPendingRequests(prev => new Set([...Array.from(prev), communityId]));
+      toast.success('Join request sent!', { icon: '📩' });
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to send request');
+    } finally {
+      setRequestingJoin(null);
+    }
+  };
+
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
       <div className="flex items-center justify-between">
@@ -191,6 +263,54 @@ export default function CommunityPage() {
           </div>
         )}
       </div>
+
+      {/* Discover Groups */}
+      {discoverGroups.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
+            <Globe className="w-5 h-5 text-purple-500" /> Discover Groups
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {discoverGroups.map((group) => (
+              <motion.div
+                whileHover={{ scale: 1.02, y: -2 }}
+                key={group.id}
+                className="p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm hover:shadow-lg transition-all"
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="text-3xl shrink-0">
+                    {group.avatar_emoji.startsWith('http') ? (
+                      <img src={group.avatar_emoji} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                    ) : (
+                      group.avatar_emoji
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold truncate">{group.name}</h3>
+                    <p className="text-xs text-zinc-500">{group.member_count} members</p>
+                  </div>
+                </div>
+                {group.description && (
+                  <p className="text-xs text-zinc-400 mb-3 line-clamp-2">{group.description}</p>
+                )}
+                <button
+                  onClick={() => handleRequestJoin(group.id)}
+                  disabled={pendingRequests.has(group.id) || requestingJoin === group.id}
+                  className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-indigo-100 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-200 dark:hover:bg-indigo-500/25"
+                >
+                  {pendingRequests.has(group.id) ? (
+                    'Request Sent ✓'
+                  ) : requestingJoin === group.id ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <><UserPlus className="w-4 h-4" /> Request to Join</>
+                  )}
+                </button>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         

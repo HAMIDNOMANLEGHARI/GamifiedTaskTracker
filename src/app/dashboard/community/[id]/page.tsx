@@ -11,8 +11,9 @@ import { toast } from 'react-hot-toast';
 import confetti from 'canvas-confetti';
 import {
   Loader2, Trophy, Users, Plus, CheckCircle2, Circle, Clock, Search,
-  ArrowLeft, Crown, UserPlus, X, ShieldAlert
+  ArrowLeft, Crown, UserPlus, X, ShieldAlert, UserCheck
 } from 'lucide-react';
+import { GroupChat } from '@/components/GroupChat';
 
 /* ─── Types ─── */
 interface Community {
@@ -62,6 +63,7 @@ export default function CommunityDetailPage() {
   const [community, setCommunity] = useState<Community | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [tasks, setTasks] = useState<CommunityTask[]>([]);
+  const [joinRequests, setJoinRequests] = useState<{ id: string; user_id: string; status: string; created_at: string; user_name: string; user_avatar: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Admin actions
@@ -73,8 +75,11 @@ export default function CommunityDetailPage() {
   const isAdmin = myMembership?.role === 'admin' || (community?.creator_id === user?.id);
 
   useEffect(() => {
-    if (communityId) loadCommunity();
-  }, [communityId]);
+    if (communityId) {
+      loadCommunity();
+      if (user?.id) loadJoinRequests();
+    }
+  }, [communityId, user?.id]);
 
   const loadCommunity = async () => {
     try {
@@ -260,6 +265,57 @@ export default function CommunityDetailPage() {
       if (error) throw error;
       setMembers(prev => prev.filter(m => m.id !== memberId));
       toast.success('Member removed');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  /* ─── Join Requests ─── */
+  const loadJoinRequests = async () => {
+    try {
+      const { data: reqData } = await supabase
+        .from('community_join_requests')
+        .select('id, user_id, status, created_at')
+        .eq('community_id', communityId)
+        .eq('status', 'pending');
+      const requests = reqData || [];
+      if (requests.length === 0) { setJoinRequests([]); return; }
+
+      const userIds = requests.map(r => r.user_id);
+      const { data: usersData } = await supabase
+        .from('users')
+        .select('id, name, avatar_url')
+        .in('id', userIds);
+      const usersMap = Object.fromEntries((usersData || []).map(u => [u.id, u]));
+
+      setJoinRequests(requests.map(r => ({
+        ...r,
+        user_name: usersMap[r.user_id]?.name || 'Unknown',
+        user_avatar: usersMap[r.user_id]?.avatar_url || null,
+      })));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleApproveJoin = async (requestId: string, userId: string) => {
+    try {
+      await supabase.from('community_members').insert({ community_id: communityId, user_id: userId, role: 'member', community_xp: 0 });
+      await supabase.from('community_join_requests').update({ status: 'approved', reviewed_at: new Date().toISOString() }).eq('id', requestId);
+      setJoinRequests(prev => prev.filter(r => r.id !== requestId));
+      toast.success('Member approved!', { icon: '✅' });
+      loadCommunity();
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to approve');
+    }
+  };
+
+  const handleRejectJoin = async (requestId: string) => {
+    try {
+      await supabase.from('community_join_requests').update({ status: 'rejected', reviewed_at: new Date().toISOString() }).eq('id', requestId);
+      setJoinRequests(prev => prev.filter(r => r.id !== requestId));
+      toast('Request rejected', { icon: '❌' });
     } catch (err) {
       console.error(err);
     }
@@ -505,6 +561,39 @@ export default function CommunityDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* ─── Join Requests (Admin) ─── */}
+      {isAdmin && joinRequests.length > 0 && (
+        <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900/30 rounded-2xl p-6 shadow-sm">
+          <h3 className="font-bold text-lg flex items-center gap-2 mb-4 text-blue-800 dark:text-blue-400">
+            <UserCheck className="w-5 h-5" /> Join Requests ({joinRequests.length})
+          </h3>
+          <div className="space-y-3">
+            {joinRequests.map(req => (
+              <div key={req.id} className="bg-white dark:bg-zinc-900 rounded-xl p-4 border border-zinc-200 dark:border-zinc-700 flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center shrink-0 overflow-hidden">
+                  {req.user_avatar ? (
+                    req.user_avatar.startsWith('http') ? (
+                      <img src={req.user_avatar} alt="" className="w-full h-full object-cover" />
+                    ) : (<span className="text-lg">{req.user_avatar}</span>)
+                  ) : (<span className="font-bold text-sm">{req.user_name?.charAt(0).toUpperCase()}</span>)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold">{req.user_name}</p>
+                  <p className="text-xs text-zinc-500">Wants to join</p>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  <button onClick={() => handleApproveJoin(req.id, req.user_id)} className="px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-sm font-bold hover:bg-emerald-600 transition-colors">Accept</button>
+                  <button onClick={() => handleRejectJoin(req.id)} className="px-3 py-1.5 bg-zinc-200 dark:bg-zinc-700 rounded-lg text-sm font-bold hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors">Decline</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ─── Group Chat ─── */}
+      <GroupChat communityId={communityId} />
 
       {/* ─── Add Member Modal ─── */}
       <AddMemberModal
