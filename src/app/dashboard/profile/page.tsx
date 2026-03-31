@@ -73,14 +73,30 @@ export default function ProfilePage() {
 
       const fetchGuilds = async () => {
         try {
-          const { data } = await supabase
+          // Fetch memberships (no join)
+          const { data: memberRows } = await supabase
             .from('community_members')
-            .select(`
-              community_id, role, community_xp,
-              sub_communities!inner ( id, name, avatar_emoji )
-            `)
+            .select('community_id, role, community_xp')
             .eq('user_id', user.id);
-          setMyGuilds((data as unknown as MyGuild[]) || []);
+          const memberships = memberRows || [];
+          if (memberships.length === 0) { setMyGuilds([]); return; }
+
+          // Fetch community details separately
+          const { data: commData } = await supabase
+            .from('sub_communities')
+            .select('id, name, avatar_emoji')
+            .in('id', memberships.map(m => m.community_id));
+          const commMap = Object.fromEntries((commData || []).map(c => [c.id, c]));
+
+          const guilds: MyGuild[] = memberships
+            .filter(m => commMap[m.community_id])
+            .map(m => ({
+              community_id: m.community_id,
+              role: m.role,
+              community_xp: m.community_xp,
+              sub_communities: commMap[m.community_id],
+            }));
+          setMyGuilds(guilds);
         } catch (err) {
           console.error('Error fetching guilds', err);
         }

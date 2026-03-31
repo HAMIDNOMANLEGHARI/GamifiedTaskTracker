@@ -87,50 +87,60 @@ export default function CommunityDetailPage() {
       if (commError) throw commError;
       setCommunity(commData as Community);
 
-      // Fetch members with user details
-      const { data: membersData } = await supabase
+      // Fetch members (without join — FK points to auth.users, not public.users)
+      const { data: rawMembers } = await supabase
         .from('community_members')
-        .select(`
-          id, user_id, role, community_xp,
-          users!inner ( name, username, avatar_url, ring, title )
-        `)
+        .select('id, user_id, role, community_xp')
         .eq('community_id', communityId)
         .order('community_xp', { ascending: false });
-      const fetchedMembers = (membersData as unknown as Member[]) || [];
+      const memberRows = rawMembers || [];
 
-      // Auto-repair: If the current user is the creator but not in the members list,
-      // insert them as admin (fixes RLS chicken-and-egg issue on first visit)
+      // Auto-repair: If the current user is the creator but not in the members list, auto-add
       const currentUserId = useUserStore.getState().user?.id;
       if (currentUserId && commData.creator_id === currentUserId) {
-        const creatorInList = fetchedMembers.some(m => m.user_id === currentUserId);
+        const creatorInList = memberRows.some((m: { user_id: string }) => m.user_id === currentUserId);
         if (!creatorInList) {
-          const { error: autoAddError } = await supabase
+          await supabase
             .from('community_members')
             .upsert(
               { community_id: communityId, user_id: currentUserId, role: 'admin', community_xp: 0 },
               { onConflict: 'community_id,user_id' }
             );
-          if (!autoAddError) {
-            // Re-fetch members after self-insert
-            const { data: refreshedMembers } = await supabase
-              .from('community_members')
-              .select(`
-                id, user_id, role, community_xp,
-                users!inner ( name, username, avatar_url, ring, title )
-              `)
-              .eq('community_id', communityId)
-              .order('community_xp', { ascending: false });
-            setMembers((refreshedMembers as unknown as Member[]) || []);
-          } else {
-            console.warn('Auto-add creator failed (RLS may block), using creator fallback', autoAddError);
-            setMembers(fetchedMembers);
-          }
-        } else {
-          setMembers(fetchedMembers);
+          // Re-fetch after self-add
+          const { data: retryMembers } = await supabase
+            .from('community_members')
+            .select('id, user_id, role, community_xp')
+            .eq('community_id', communityId)
+            .order('community_xp', { ascending: false });
+          memberRows.length = 0;
+          (retryMembers || []).forEach((m: { id: string; user_id: string; role: string; community_xp: number }) => memberRows.push(m));
         }
-      } else {
-        setMembers(fetchedMembers);
       }
+
+      // Now fetch user profiles separately
+      const userIds = memberRows.map((m: { user_id: string }) => m.user_id);
+      let usersMap: Record<string, { name: string; username: string; avatar_url: string | null; ring: string | null; title: string | null }> = {};
+      if (userIds.length > 0) {
+        const { data: usersData } = await supabase
+          .from('users')
+          .select('id, name, username, avatar_url, ring, title')
+          .in('id', userIds);
+        if (usersData) {
+          usersMap = Object.fromEntries(usersData.map(u => [u.id, { name: u.name, username: u.username, avatar_url: u.avatar_url, ring: u.ring, title: u.title }]));
+        }
+      }
+
+      // Combine into Member[] shape
+      const combinedMembers: Member[] = memberRows
+        .filter((m: { user_id: string }) => usersMap[m.user_id])
+        .map((m: { id: string; user_id: string; role: string; community_xp: number }) => ({
+          id: m.id,
+          user_id: m.user_id,
+          role: m.role as 'admin' | 'member',
+          community_xp: m.community_xp,
+          users: usersMap[m.user_id],
+        }));
+      setMembers(combinedMembers);
 
       // Fetch tasks
       const { data: tasksData } = await supabase

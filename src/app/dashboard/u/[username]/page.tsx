@@ -114,15 +114,29 @@ export default function PublicProfilePage() {
         
       if (userTasks) setTasks(userTasks as Task[]);
 
-      // 5. Fetch guilds
-      const { data: guildsData } = await supabase
+      // 5. Fetch guilds (separate queries — FK join doesn't work)
+      const { data: memberRows } = await supabase
         .from('community_members')
-        .select(`
-          community_id, role, community_xp,
-          sub_communities!inner ( id, name, avatar_emoji )
-        `)
+        .select('community_id, role, community_xp')
         .eq('user_id', userData.id);
-      setGuilds((guildsData as unknown as PublicGuild[]) || []);
+      const memberships = memberRows || [];
+      if (memberships.length > 0) {
+        const { data: commData } = await supabase
+          .from('sub_communities')
+          .select('id, name, avatar_emoji')
+          .in('id', memberships.map(m => m.community_id));
+        const commMap = Object.fromEntries((commData || []).map(c => [c.id, c]));
+        setGuilds(memberships
+          .filter(m => commMap[m.community_id])
+          .map(m => ({
+            community_id: m.community_id,
+            role: m.role,
+            community_xp: m.community_xp,
+            sub_communities: commMap[m.community_id],
+          })));
+      } else {
+        setGuilds([]);
+      }
 
       // 4. Check if CURRENT user is following/rival
       if (currentUser && currentUser.id !== userData.id) {

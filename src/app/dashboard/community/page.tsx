@@ -75,31 +75,51 @@ export default function CommunityPage() {
   const fetchMyCommunities = async () => {
     setCommunitiesLoading(true);
     try {
-      const { data, error } = await supabase
+      // Fetch membership rows (no join — FK issues with PostgREST)
+      const { data: membershipData, error } = await supabase
         .from('community_members')
-        .select(`
-          community_id, role, community_xp,
-          sub_communities!inner ( id, name, avatar_emoji, description, creator_id )
-        `)
+        .select('community_id, role, community_xp')
         .eq('user_id', user!.id);
 
       if (error && error.code !== '42P01') throw error;
-      const communities = (data as unknown as MyCommunity[]) || [];
+      const memberships = membershipData || [];
+
+      if (memberships.length === 0) {
+        setMyCommunities([]);
+        setCommunitiesLoading(false);
+        return;
+      }
+
+      // Fetch community details separately
+      const communityIds = memberships.map(m => m.community_id);
+      const { data: commData } = await supabase
+        .from('sub_communities')
+        .select('id, name, avatar_emoji, description, creator_id')
+        .in('id', communityIds);
+
+      const commMap = Object.fromEntries((commData || []).map(c => [c.id, c]));
+
+      // Combine
+      const communities: MyCommunity[] = memberships
+        .filter(m => commMap[m.community_id])
+        .map(m => ({
+          community_id: m.community_id,
+          role: m.role,
+          community_xp: m.community_xp,
+          sub_communities: commMap[m.community_id],
+        }));
       setMyCommunities(communities);
 
       // Fetch member counts for each community
-      if (communities.length > 0) {
-        const communityIds = communities.map(c => c.community_id);
-        const counts: Record<string, number> = {};
-        for (const cid of communityIds) {
-          const { count } = await supabase
-            .from('community_members')
-            .select('*', { count: 'exact', head: true })
-            .eq('community_id', cid);
-          counts[cid] = count || 0;
-        }
-        setCommunityMemberCounts(counts);
+      const counts: Record<string, number> = {};
+      for (const cid of communityIds) {
+        const { count } = await supabase
+          .from('community_members')
+          .select('*', { count: 'exact', head: true })
+          .eq('community_id', cid);
+        counts[cid] = count || 0;
       }
+      setCommunityMemberCounts(counts);
     } catch (err) {
       console.error(err);
     } finally {
