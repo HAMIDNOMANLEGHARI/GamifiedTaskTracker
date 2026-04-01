@@ -141,10 +141,10 @@ export function GroupChat({ communityId }: GroupChatProps) {
     if (!newMessage.trim() || !user || isSending) return;
     setIsSending(true);
 
-    // Optimistic add
-    const tempId = `temp_${Date.now()}`;
+    // Optimistic add (generate real UUID so realtime broadcast deduplicates properly)
+    const msgId = crypto.randomUUID();
     const optimisticMsg: ChatMessage = {
-      id: tempId,
+      id: msgId,
       community_id: communityId,
       user_id: user.id,
       content: newMessage.trim(),
@@ -160,6 +160,7 @@ export function GroupChat({ communityId }: GroupChatProps) {
       const { error } = await supabase
         .from('community_messages')
         .insert({
+          id: msgId,
           community_id: communityId,
           user_id: user.id,
           content: optimisticMsg.content,
@@ -168,7 +169,7 @@ export function GroupChat({ communityId }: GroupChatProps) {
     } catch (err) {
       console.error('Failed to send:', err);
       // Remove optimistic message on error
-      setMessages(prev => prev.filter(m => m.id !== tempId));
+      setMessages(prev => prev.filter(m => m.id !== msgId));
     } finally {
       setIsSending(false);
     }
