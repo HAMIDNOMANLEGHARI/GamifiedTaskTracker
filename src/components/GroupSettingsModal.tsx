@@ -2,8 +2,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Loader2, Upload, ImageIcon, Save, Link2, Copy, Check, Megaphone, RefreshCw, ArrowRightLeft } from 'lucide-react';
+import { X, Loader2, Upload, ImageIcon, Save, Link2, Copy, Check, Megaphone, RefreshCw, ArrowRightLeft, Trash2, LogOut } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 
 interface Community {
   id: string;
@@ -41,6 +42,7 @@ function generateInviteCode(): string {
 }
 
 export function GroupSettingsModal({ isOpen, onClose, community, members, currentUserId, onUpdated }: GroupSettingsModalProps) {
+  const router = useRouter();
   const [name, setName] = useState(community.name);
   const [description, setDescription] = useState(community.description || '');
   const [avatarEmoji, setAvatarEmoji] = useState(community.avatar_emoji);
@@ -53,10 +55,11 @@ export function GroupSettingsModal({ isOpen, onClose, community, members, curren
 
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'announce' | 'invite' | 'transfer'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'announce' | 'invite' | 'danger'>('general');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Reset state when community changes
+  const isCreator = community.creator_id === currentUserId;
+
   useEffect(() => {
     setName(community.name);
     setDescription(community.description || '');
@@ -100,11 +103,7 @@ export function GroupSettingsModal({ isOpen, onClose, community, members, curren
       const avatarValue = useCustomImage && customImageUrl ? customImageUrl : avatarEmoji;
       const { error } = await supabase
         .from('sub_communities')
-        .update({
-          name: name.trim(),
-          description: description.trim() || null,
-          avatar_emoji: avatarValue,
-        })
+        .update({ name: name.trim(), description: description.trim() || null, avatar_emoji: avatarValue })
         .eq('id', community.id);
       if (error) throw error;
       toast.success('Group updated!', { icon: '✅' });
@@ -163,9 +162,15 @@ export function GroupSettingsModal({ isOpen, onClose, community, members, curren
 
   const handleTransferOwnership = async () => {
     if (!transferTo) return;
-    if (!confirm('Are you sure you want to transfer ownership? This cannot be undone.')) return;
+    if (!confirm('Are you sure you want to transfer ownership? You will lose owner privileges.')) return;
     setIsSaving(true);
     try {
+      // Make the target an admin first if not already
+      const targetMember = members.find(m => m.user_id === transferTo);
+      if (targetMember && targetMember.role !== 'admin') {
+        await supabase.from('community_members').update({ role: 'admin' }).eq('id', targetMember.id);
+      }
+      // Transfer ownership
       const { error } = await supabase
         .from('sub_communities')
         .update({ creator_id: transferTo })
@@ -176,20 +181,68 @@ export function GroupSettingsModal({ isOpen, onClose, community, members, curren
       onClose();
     } catch (err) {
       console.error(err);
-      toast.error('Failed to transfer ownership');
+      toast.error('Failed to transfer ownership. You may need to update RLS policies.');
     } finally {
       setIsSaving(false);
     }
   };
 
+  const handleDeleteGroup = async () => {
+    if (!confirm(`Are you sure you want to permanently delete "${community.name}"? All members, tasks, and messages will be lost. This cannot be undone.`)) return;
+    setIsSaving(true);
+    try {
+      // Delete in order: tasks, messages, join requests, members, then the community
+      await supabase.from('community_tasks').delete().eq('community_id', community.id);
+      await supabase.from('community_messages').delete().eq('community_id', community.id);
+      await supabase.from('community_join_requests').delete().eq('community_id', community.id);
+      await supabase.from('community_members').delete().eq('community_id', community.id);
+      const { error } = await supabase.from('sub_communities').delete().eq('id', community.id);
+      if (error) throw error;
+      toast.success('Group deleted', { icon: '🗑️' });
+      onClose();
+      router.push('/dashboard/community');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to delete group');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleLeaveGroup = async () => {
+    if (isCreator) {
+      toast.error('You are the owner. Transfer ownership before leaving.');
+      return;
+    }
+    if (!confirm('Are you sure you want to leave this group?')) return;
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('community_members')
+        .delete()
+        .eq('community_id', community.id)
+        .eq('user_id', currentUserId);
+      if (error) throw error;
+      toast.success('You left the group', { icon: '👋' });
+      onClose();
+      router.push('/dashboard/community');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to leave group');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // All members except current user (for transfer)
+  const otherMembers = members.filter(m => m.user_id !== currentUserId);
+
   const tabs = [
     { id: 'general' as const, label: 'General', icon: '⚙️' },
     { id: 'announce' as const, label: 'Announce', icon: '📢' },
-    { id: 'invite' as const, label: 'Invite Link', icon: '🔗' },
-    { id: 'transfer' as const, label: 'Transfer', icon: '👑' },
+    { id: 'invite' as const, label: 'Invite', icon: '🔗' },
+    { id: 'danger' as const, label: 'Danger Zone', icon: '⚠️' },
   ];
-
-  const admins = members.filter(m => m.role === 'admin' && m.user_id !== currentUserId);
 
   return (
     <AnimatePresence>
@@ -218,7 +271,7 @@ export function GroupSettingsModal({ isOpen, onClose, community, members, curren
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
                     activeTab === tab.id
-                      ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400'
+                      ? tab.id === 'danger' ? 'bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400' : 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400'
                       : 'text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800'
                   }`}
                 >
@@ -232,7 +285,6 @@ export function GroupSettingsModal({ isOpen, onClose, community, members, curren
               {/* ─── General Tab ─── */}
               {activeTab === 'general' && (
                 <div className="space-y-5">
-                  {/* Photo Section */}
                   <div className="space-y-3">
                     <label className="text-sm font-bold text-zinc-500 uppercase tracking-wider">Group Photo</label>
                     <div className="flex gap-2 mb-3">
@@ -274,14 +326,12 @@ export function GroupSettingsModal({ isOpen, onClose, community, members, curren
                     )}
                   </div>
 
-                  {/* Name */}
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-zinc-500 uppercase tracking-wider">Group Name</label>
                     <input type="text" value={name} onChange={e => setName(e.target.value)} maxLength={40}
                       className="w-full px-4 py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 font-medium text-sm" />
                   </div>
 
-                  {/* Description */}
                   <div className="space-y-2">
                     <label className="text-sm font-bold text-zinc-500 uppercase tracking-wider">Description</label>
                     <textarea value={description} onChange={e => setDescription(e.target.value)} maxLength={200} rows={3}
@@ -301,18 +351,16 @@ export function GroupSettingsModal({ isOpen, onClose, community, members, curren
                 <div className="space-y-5">
                   <div className="flex items-center gap-3 text-zinc-500 mb-1">
                     <Megaphone className="w-5 h-5 text-orange-500" />
-                    <p className="text-sm">Pin an announcement visible at the top of your group page for all members.</p>
+                    <p className="text-sm">Pin an announcement visible at the top of your group page.</p>
                   </div>
                   <textarea value={announcement} onChange={e => setAnnouncement(e.target.value)} maxLength={300} rows={4}
                     placeholder="Type your announcement here..."
                     className="w-full px-4 py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:outline-none focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 font-medium text-sm resize-none" />
-                  <div className="flex gap-3">
-                    <button onClick={handleSaveAnnouncement} disabled={isSaving}
-                      className="flex-1 flex items-center justify-center gap-2 bg-orange-500 text-white py-3 rounded-xl font-bold shadow-lg shadow-orange-500/25 disabled:opacity-50 transition-all hover:bg-orange-600">
-                      {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Megaphone className="w-4 h-4" />}
-                      {announcement.trim() ? 'Pin Announcement' : 'Remove Announcement'}
-                    </button>
-                  </div>
+                  <button onClick={handleSaveAnnouncement} disabled={isSaving}
+                    className="w-full flex items-center justify-center gap-2 bg-orange-500 text-white py-3 rounded-xl font-bold shadow-lg shadow-orange-500/25 disabled:opacity-50 transition-all hover:bg-orange-600">
+                    {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Megaphone className="w-4 h-4" />}
+                    {announcement.trim() ? 'Pin Announcement' : 'Remove Announcement'}
+                  </button>
                 </div>
               )}
 
@@ -321,9 +369,8 @@ export function GroupSettingsModal({ isOpen, onClose, community, members, curren
                 <div className="space-y-5">
                   <div className="flex items-center gap-3 text-zinc-500 mb-1">
                     <Link2 className="w-5 h-5 text-blue-500" />
-                    <p className="text-sm">Generate a shareable invite link anyone can use to join your group.</p>
+                    <p className="text-sm">Generate a shareable invite link anyone can use to join.</p>
                   </div>
-
                   {inviteCode ? (
                     <div className="space-y-4">
                       <div className="p-4 bg-zinc-50 dark:bg-zinc-800 rounded-xl border border-zinc-200 dark:border-zinc-700">
@@ -341,46 +388,81 @@ export function GroupSettingsModal({ isOpen, onClose, community, members, curren
                           <RefreshCw className="w-4 h-4" />
                         </button>
                       </div>
-                      <p className="text-xs text-zinc-400 text-center">Anyone with this link can join your group instantly</p>
                     </div>
                   ) : (
                     <button onClick={handleGenerateInvite}
                       className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-4 rounded-xl font-bold shadow-lg shadow-blue-500/25 transition-all hover:shadow-blue-500/40">
-                      <Link2 className="w-5 h-5" />
-                      Generate Invite Link
+                      <Link2 className="w-5 h-5" /> Generate Invite Link
                     </button>
                   )}
                 </div>
               )}
 
-              {/* ─── Transfer Tab ─── */}
-              {activeTab === 'transfer' && (
-                <div className="space-y-5">
-                  <div className="flex items-center gap-3 text-zinc-500 mb-1">
-                    <ArrowRightLeft className="w-5 h-5 text-red-500" />
-                    <p className="text-sm">Transfer group ownership to another admin. <strong className="text-red-500">This cannot be undone.</strong></p>
+              {/* ─── Danger Zone Tab ─── */}
+              {activeTab === 'danger' && (
+                <div className="space-y-6">
+                  {/* Leave Group */}
+                  <div className="p-5 border border-zinc-200 dark:border-zinc-700 rounded-2xl space-y-3">
+                    <div className="flex items-center gap-3">
+                      <LogOut className="w-5 h-5 text-orange-500" />
+                      <div>
+                        <p className="font-bold text-sm">Leave Group</p>
+                        <p className="text-xs text-zinc-500">You will lose your XP and rank in this group.</p>
+                      </div>
+                    </div>
+                    <button onClick={handleLeaveGroup} disabled={isSaving}
+                      className="w-full flex items-center justify-center gap-2 bg-orange-100 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 py-2.5 rounded-xl font-bold text-sm disabled:opacity-50 transition-all hover:bg-orange-200 dark:hover:bg-orange-900/30">
+                      <LogOut className="w-4 h-4" /> Leave this Group
+                    </button>
                   </div>
 
-                  {admins.length === 0 ? (
-                    <div className="p-6 text-center border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl">
-                      <p className="text-zinc-500 text-sm">No other admins to transfer to.</p>
-                      <p className="text-zinc-400 text-xs mt-1">Promote a member to admin first.</p>
+                  {/* Transfer Ownership (creator only) */}
+                  {isCreator && (
+                    <div className="p-5 border border-zinc-200 dark:border-zinc-700 rounded-2xl space-y-3">
+                      <div className="flex items-center gap-3">
+                        <ArrowRightLeft className="w-5 h-5 text-amber-500" />
+                        <div>
+                          <p className="font-bold text-sm">Transfer Ownership</p>
+                          <p className="text-xs text-zinc-500">Make another member the owner of this group.</p>
+                        </div>
+                      </div>
+                      {otherMembers.length === 0 ? (
+                        <p className="text-xs text-zinc-400 text-center py-2">No other members to transfer to.</p>
+                      ) : (
+                        <>
+                          <select value={transferTo} onChange={e => setTransferTo(e.target.value)}
+                            className="w-full px-4 py-2.5 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-amber-500/20 font-medium text-sm">
+                            <option value="">Select new owner...</option>
+                            {otherMembers.map(m => (
+                              <option key={m.user_id} value={m.user_id}>{m.users.name} {m.role === 'admin' ? '(Admin)' : ''}</option>
+                            ))}
+                          </select>
+                          <button onClick={handleTransferOwnership} disabled={!transferTo || isSaving}
+                            className="w-full flex items-center justify-center gap-2 bg-amber-500 text-white py-2.5 rounded-xl font-bold text-sm disabled:opacity-50 transition-all hover:bg-amber-600">
+                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRightLeft className="w-4 h-4" />}
+                            Transfer Ownership
+                          </button>
+                        </>
+                      )}
                     </div>
-                  ) : (
-                    <>
-                      <select value={transferTo} onChange={e => setTransferTo(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:outline-none focus:ring-4 focus:ring-red-500/20 font-medium text-sm">
-                        <option value="">Select new owner...</option>
-                        {admins.map(m => (
-                          <option key={m.user_id} value={m.user_id}>{m.users.name}</option>
-                        ))}
-                      </select>
-                      <button onClick={handleTransferOwnership} disabled={!transferTo || isSaving}
-                        className="w-full flex items-center justify-center gap-2 bg-red-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-red-500/25 disabled:opacity-50 transition-all hover:bg-red-700">
-                        {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRightLeft className="w-4 h-4" />}
-                        Transfer Ownership
+                  )}
+
+                  {/* Delete Group (creator only) */}
+                  {isCreator && (
+                    <div className="p-5 border-2 border-red-200 dark:border-red-900/50 rounded-2xl space-y-3 bg-red-50/50 dark:bg-red-900/5">
+                      <div className="flex items-center gap-3">
+                        <Trash2 className="w-5 h-5 text-red-500" />
+                        <div>
+                          <p className="font-bold text-sm text-red-600 dark:text-red-400">Delete Group</p>
+                          <p className="text-xs text-zinc-500">Permanently delete this group, all messages, tasks, and members. <strong>This cannot be undone.</strong></p>
+                        </div>
+                      </div>
+                      <button onClick={handleDeleteGroup} disabled={isSaving}
+                        className="w-full flex items-center justify-center gap-2 bg-red-600 text-white py-2.5 rounded-xl font-bold text-sm disabled:opacity-50 transition-all hover:bg-red-700">
+                        {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                        Permanently Delete Group
                       </button>
-                    </>
+                    </div>
                   )}
                 </div>
               )}

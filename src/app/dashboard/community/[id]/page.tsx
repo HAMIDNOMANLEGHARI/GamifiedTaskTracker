@@ -387,6 +387,13 @@ export default function CommunityDetailPage() {
               </button>
             </div>
           )}
+          {!isAdmin && (
+            <div className="flex flex-col gap-3 shrink-0">
+              <button onClick={() => setShowSettings(true)} className="flex items-center gap-2 px-5 py-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-md rounded-xl font-bold text-sm transition-all">
+                <Settings className="w-4 h-4" /> Options
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
