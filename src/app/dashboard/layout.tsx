@@ -4,9 +4,6 @@ import { Sidebar } from '@/components/Sidebar';
 import { useAppData } from '@/hooks/useAppData';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { motion } from 'framer-motion';
-import { useTheme } from 'next-themes';
-import { SHOP_ITEMS } from '@/constants/shop';
-import { useEffect, useState } from 'react';
 
 export default function DashboardLayout({
   children,
@@ -14,18 +11,6 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   useAppData();
-  const { theme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const selectedTheme = SHOP_ITEMS.themes.find(t => t.id === theme);
-  const isPremiumTheme = selectedTheme && !['light', 'dark'].includes(selectedTheme.id);
-  
-  // Extract only the background color (e.g., 'bg-blue-950')
-  const themeBgClass = isPremiumTheme ? selectedTheme.cssClass.split(' ')[0] : 'bg-zinc-50 dark:bg-black';
 
   return (
     <div className={`flex h-screen overflow-hidden transition-colors duration-500 bg-transparent`}>
