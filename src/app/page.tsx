@@ -96,10 +96,9 @@ export default function LandingPage() {
       
       <LandingHeader />
 
-      {/* Background Glowing Orbs */}
-      <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-indigo-600/20 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] bg-pink-600/10 rounded-full blur-[150px] pointer-events-none" />
-      <div className="absolute top-[40%] left-[50%] w-[800px] h-[400px] bg-emerald-600/10 rounded-full blur-[180px] pointer-events-none transform -translate-x-1/2" />
+      {/* Cyber Grid Background */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#111_1px,transparent_1px),linear-gradient(to_bottom,#111_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none opacity-50" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-[#2B60FF]/20 blur-[150px] rounded-full pointer-events-none" />
 
       {/* HERO SECTION */}
       <div id="hero" className="max-w-7xl mx-auto px-6 pt-16 md:pt-24 pb-12 md:pb-20 grid lg:grid-cols-2 gap-12 lg:gap-16 items-center relative z-10 min-h-[90vh]">
@@ -115,16 +114,16 @@ export default function LandingPage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-xs font-bold text-zinc-300 shadow-xl"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-[#2B60FF]/30 bg-[#2B60FF]/10 text-xs font-bold text-[#2B60FF]"
           >
-            <Sparkles className="h-4 w-4 text-emerald-400" />
-            <span className="tracking-wide">THE NEW META FOR PRODUCTIVITY 💀</span>
+            <Activity className="h-4 w-4" />
+            <span className="tracking-wide">BE USEFUL RIGHT NOW.</span>
           </motion.div>
           
-          <h1 className="text-5xl md:text-6xl lg:text-[5rem] font-black tracking-tighter leading-[1.05] drop-shadow-2xl">
-            Turn your <br className="hidden lg:block"/> to-do lists <br />
-            <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-              into epic quests.
+          <h1 className="text-5xl md:text-6xl lg:text-[5rem] font-light tracking-tighter leading-[1.05] drop-shadow-2xl">
+            PLAN, <br className="hidden lg:block"/> MANAGE & <br />
+            <span className="font-black text-white flex items-center font-bold">
+              TRACK <Target className="w-12 h-12 mx-3 text-[#2B60FF]" /> TASK
             </span>
           </h1>
           
@@ -134,10 +133,10 @@ export default function LandingPage() {
 
           <div className="flex items-center gap-6 pt-4 opacity-80">
             <div className="flex -space-x-3">
-              <div className="h-10 w-10 rounded-full border-2 border-[#050505] bg-gradient-to-tr from-indigo-500 to-purple-500" />
-              <div className="h-10 w-10 rounded-full border-2 border-[#050505] bg-gradient-to-tr from-pink-500 to-orange-500" />
-              <div className="h-10 w-10 rounded-full border-2 border-[#050505] bg-gradient-to-tr from-emerald-500 to-teal-500" />
-              <div className="h-10 w-10 rounded-full border-2 border-[#050505] bg-zinc-800 flex items-center justify-center text-xs font-bold">+10k</div>
+              <div className="h-10 w-10 rounded-full border-2 border-[#050505] bg-gradient-to-tr from-[#2B60FF] to-cyan-400" />
+              <div className="h-10 w-10 rounded-full border-2 border-[#050505] bg-gradient-to-tr from-[#4169E1] to-purple-500" />
+              <div className="h-10 w-10 rounded-full border-2 border-[#050505] bg-gradient-to-tr from-[#1A0B2E] to-blue-900" />
+              <div className="h-10 w-10 rounded-full border-2 border-[#050505] bg-[#161B33] flex items-center justify-center text-xs font-bold">+10k</div>
             </div>
             <div className="text-sm font-medium text-zinc-400">Join the arena before it&apos;s mainstream.</div>
           </div>
@@ -163,13 +162,13 @@ export default function LandingPage() {
           </motion.div>
 
           {/* Form */}
-          <div className="relative bg-[#0a0a0c]/60 backdrop-blur-3xl border border-white/10 p-8 rounded-[2rem] shadow-[0_0_80px_rgba(0,0,0,0.6)]">
+          <div className="relative bg-[#0A0D14] border border-[#1C2333] p-8 rounded-[2.5rem] shadow-2xl">
             <div className="text-left space-y-2 mb-8">
               <h2 className="text-3xl font-extrabold tracking-tight text-white mb-2">
-                {isLogin ? 'Welcome Back.' : 'Join the Party.'}
+                {isLogin ? 'Hello, Alina' : 'Join the Party.'}
               </h2>
-              <p className="text-sm text-zinc-400 font-medium">
-                {isLogin ? 'Step securely back into the arena.' : 'Start your gamified productivity journey.'}
+              <p className="text-sm text-[#2B60FF] font-bold">
+                {isLogin ? 'Be useful right now.' : 'Start your gamified productivity journey.'}
               </p>
             </div>
 
@@ -182,7 +181,7 @@ export default function LandingPage() {
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full px-4 py-3.5 rounded-xl border border-white/5 bg-white/[0.03] focus:bg-white/[0.06] focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all text-white placeholder:text-zinc-600 text-sm"
+                    className="w-full px-5 py-4 rounded-2xl border border-[#1C2333] bg-[#040810] focus:border-[#2B60FF] focus:outline-none focus:ring-1 focus:ring-[#2B60FF] transition-all text-white placeholder:text-zinc-600 text-sm font-medium"
                     placeholder="Enter display name"
                   />
                 </div>
@@ -194,7 +193,7 @@ export default function LandingPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3.5 rounded-xl border border-white/5 bg-white/[0.03] focus:bg-white/[0.06] focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all text-white placeholder:text-zinc-600 text-sm"
+                  className="w-full px-5 py-4 rounded-2xl border border-[#1C2333] bg-[#040810] focus:border-[#2B60FF] focus:outline-none focus:ring-1 focus:ring-[#2B60FF] transition-all text-white placeholder:text-zinc-600 text-sm font-medium"
                   placeholder="you@example.com"
                 />
               </div>
@@ -205,7 +204,7 @@ export default function LandingPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3.5 rounded-xl border border-white/5 bg-white/[0.03] focus:bg-white/[0.06] focus:border-indigo-500/50 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all text-white placeholder:text-zinc-600 text-sm"
+                  className="w-full px-5 py-4 rounded-2xl border border-[#1C2333] bg-[#040810] focus:border-[#2B60FF] focus:outline-none focus:ring-1 focus:ring-[#2B60FF] transition-all text-white placeholder:text-zinc-600 text-sm font-medium"
                   placeholder="••••••••"
                 />
               </div>
@@ -217,7 +216,7 @@ export default function LandingPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full relative flex items-center justify-center gap-2 rounded-xl px-4 py-4 text-sm font-bold text-white transition-all bg-white/10 hover:bg-white/20 border border-white/10 hover:border-white/30 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed mt-4 group"
+                className="w-full relative flex items-center justify-center gap-2 rounded-2xl px-4 py-4 text-sm font-bold text-white transition-all bg-[#2B60FF] hover:bg-[#1A45CC] shadow-[0_8px_30px_rgba(43,96,255,0.4)] disabled:opacity-50 disabled:cursor-not-allowed mt-4 group"
               >
                 {isLoading && <Loader2 className="h-4 w-4 animate-spin flex-shrink-0 text-zinc-400" />}
                 {!isLoading && (isLogin ? 'INITIALIZE LOGIN' : 'CREATE CHARACTER')}

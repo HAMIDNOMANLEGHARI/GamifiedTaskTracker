@@ -9,35 +9,24 @@
 }
 
 @layer utilities {
-  .animated-blob-bg {
-    background: linear-gradient(-45deg, #f8fafc, #e0e7ff, #f3e8ff, #fdf4ff);
-    background-size: 400% 400%;
-    animation: gradientShift 15s ease infinite;
+  .deep-space-bg {
+    background-color: #000000;
+    background-image: radial-gradient(circle at 10% 20%, rgba(4, 11, 22, 1) 0%, rgba(0, 0, 0, 1) 90%);
     background-attachment: fixed;
   }
 
-  .dark .animated-blob-bg {
-    background: linear-gradient(-45deg, #050505, #1e1b4b, #2e1065, #0f172a);
-    background-size: 400% 400%;
-    animation: gradientShift 15s ease infinite;
-    background-attachment: fixed;
-  }
-
+  /* Maintaining old glass-card class name to avoid touching 50 files, but injecting new Deep Cobalt style */
   .glass-card {
-    @apply bg-white/70 dark:bg-zinc-950/60 backdrop-blur-xl border border-white/50 dark:border-white/10 shadow-xl;
+    @apply bg-[#0D1527] border border-white/5 shadow-[0_8px_30px_rgb(0,0,0,0.5)] rounded-[2rem];
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
   }
   
   .glass-panel {
-    @apply bg-white/40 dark:bg-black/50 backdrop-blur-2xl border border-white/40 dark:border-white/5;
+    @apply bg-[#13111C] border border-[#2A2938] rounded-[2rem];
   }
 
   .glass-input {
-    @apply bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-zinc-200 dark:border-white/10 focus:ring-2 focus:ring-indigo-500/50 transition-all;
+    @apply bg-[#0B0A10] border border-white/10 rounded-2xl focus:ring-2 focus:ring-[#2B60FF]/50 focus:border-[#2B60FF] transition-all;
   }
 }
 
-@keyframes gradientShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
